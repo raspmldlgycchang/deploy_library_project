@@ -1,4 +1,11 @@
 .vs/
 x64/
 ExamMemDC/x64/
-ExamMemDC/ExamMemDC.aps
+*.aps
+*.pdb
+*.ipdb
+*.exp
+*.obj
+*.iobj
+.localhistory/
+
