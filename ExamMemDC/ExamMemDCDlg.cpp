@@ -18,7 +18,7 @@
 
 
 CExamMemDCDlg::CExamMemDCDlg(CWnd* pParent /*=nullptr*/)
-	: CDialogEx(IDD_EXAMMEMDC_DIALOG, pParent)
+	: CDialogEx(IDD_EXAMMEMDC_DIALOG, pParent), m_ini_filepath(L"C:\\ELP\\docs\\MemDC\\ExamMemDC\\Bin\\DataWrite.ini")
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
@@ -181,18 +181,147 @@ void CExamMemDCDlg::DrawImage(HDC ah_dc_pic)
 
 void CExamMemDCDlg::OnBnClickedOpenBtn()
 {
-	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
-	CRect win_rect, client_rect;
-	GetWindowRect(win_rect);
-	GetClientRect(client_rect);
-	int cx_margin = win_rect.Width() - client_rect.Width();
-	int cy_margin = win_rect.Height() - client_rect.Height();
-	GetDlgItem(IDC_OPEN_BTN)->GetWindowRect(win_rect);
-	int top_margin = win_rect.bottom;
-	CRect r;
-	GetClientRect(r);
-	r.SetRect(r.left, r.top, r.left + cx_margin, r.top + cy_margin+top_margin);
+	FILE* p_file = NULL;
+
+	CString name_filter = L"모든 파일(*.*) | *.* | 이미지 파일(*.BMP, *.GIF, *.JPG, *.PNG) | (*.BMP; *.GIF; *.JPG; *.PNG; *.bmp; *.gif; *.jpg; *.png) ||";
+
+	CFileDialog ins_dlg(TRUE, L"BMP; GIF; JPG; PNG; bmp; gif; jpg; png", L"*.BMP; *.GIF; *.JPG; *.PNG; *.bmp; *.gif; *.jpg; *.png", OFN_HIDEREADONLY | OFN_NOCHANGEDIR | OFN_OVERWRITEPROMPT, name_filter);
+
+	ins_dlg.m_ofn.nFilterIndex = 0;
+
+	if (ins_dlg.DoModal() == IDOK)
+	{
+
+		if (0 == _wfopen_s(&p_file, ins_dlg.GetPathName(), L"rb"))
+		{
+			m_file_path = ins_dlg.GetPathName();
+
+			SetBitmap(m_file_path);
+
+			CSize a_size = GetTotalSize();
+
+			WriteDefaultData(a_size.cx, a_size.cy);
+
+			fclose(p_file);
+		}
+		
+		RenewalDisplay();
+	}
+}
+
+void CExamMemDCDlg::WriteDefaultData(int cx, int cy)
+{
+	WriteNullSectionIni();
+	CString strLX, strLY, strRX, strRY;
+
+	CString sectionName = GetSectionName(IDC_PIC1 + 0 - IDC_PIC1);
+	strLX.Format(L"%d", 0);
+	strLY.Format(L"%d", 0);
+	strRX.Format(L"%d", cx / 3);
+	strRY.Format(L"%d", cy / 3);
+	WriteStringIni(sectionName, L"LX", strLX, m_ini_filepath);
+	WriteStringIni(sectionName, L"LY", strLY, m_ini_filepath);
+	WriteStringIni(sectionName, L"RX", strRX, m_ini_filepath);
+	WriteStringIni(sectionName, L"RY", strRY, m_ini_filepath);
+
+	sectionName = GetSectionName(IDC_PIC1 + 1 - IDC_PIC1);
+	strLX.Format(L"%d", cx*2/ 3);
+	strLY.Format(L"%d", 0);
+	strRX.Format(L"%d", cx);
+	strRY.Format(L"%d", cy / 3);
+	WriteStringIni(sectionName, L"LX", strLX, m_ini_filepath);
+	WriteStringIni(sectionName, L"LY", strLY, m_ini_filepath);
+	WriteStringIni(sectionName, L"RX", strRX, m_ini_filepath);
+	WriteStringIni(sectionName, L"RY", strRY, m_ini_filepath);
+
+	sectionName = GetSectionName(IDC_PIC1 + 2 - IDC_PIC1);
+	strLX.Format(L"%d", cx / 3);
+	strLY.Format(L"%d", cy / 3);
+	strRX.Format(L"%d", cx * 2 / 3);
+	strRY.Format(L"%d", cy * 2 / 3);
+	WriteStringIni(sectionName, L"LX", strLX, m_ini_filepath);
+	WriteStringIni(sectionName, L"LY", strLY, m_ini_filepath);
+	WriteStringIni(sectionName, L"RX", strRX, m_ini_filepath);
+	WriteStringIni(sectionName, L"RY", strRY, m_ini_filepath);
+
+	sectionName = GetSectionName(IDC_PIC1 + 3 - IDC_PIC1);
+	strLX.Format(L"%d", 0);
+	strLY.Format(L"%d", cy *2/ 3);
+	strRX.Format(L"%d", cx / 3);
+	strRY.Format(L"%d", cy);
+	WriteStringIni(sectionName, L"LX", strLX, m_ini_filepath);
+	WriteStringIni(sectionName, L"LY", strLY, m_ini_filepath);
+	WriteStringIni(sectionName, L"RX", strRX, m_ini_filepath);
+	WriteStringIni(sectionName, L"RY", strRY, m_ini_filepath);
+
+	sectionName = GetSectionName(IDC_PIC1 + 4 - IDC_PIC1);
+	strLX.Format(L"%d", cx * 2 / 3);
+	strLY.Format(L"%d", cy * 2 / 3);
+	strRX.Format(L"%d", cx);
+	strRY.Format(L"%d", cy);
+	WriteStringIni(sectionName, L"LX", strLX, m_ini_filepath);
+	WriteStringIni(sectionName, L"LY", strLY, m_ini_filepath);
+	WriteStringIni(sectionName, L"RX", strRX, m_ini_filepath);
+	WriteStringIni(sectionName, L"RY", strRY, m_ini_filepath);
+}
+
+void CExamMemDCDlg::WriteNullSectionIni()
+{
+	CString sectionName;
+	for (int i = 0; i < 5; i++)
+	{
+		sectionName = GetSectionName(IDC_BUTTON1+i-IDC_BUTTON1);
+
+		WritePrivateProfileString(sectionName, NULL, NULL, m_ini_filepath);
+	}
+}
+
+CString CExamMemDCDlg::GetSectionName(UINT a_ctrl_id)
+{
+	CString strSectionName, strSectionNum;
+
+	strSectionName = L"ROI_";
+
+	strSectionNum.Format(L"%d", a_ctrl_id);
+
+	strSectionName += strSectionNum;
+
+	return strSectionName;
+}
+
+void CExamMemDCDlg::RenewalDisplay()
+{
+	CStatic *p_static = (CStatic*)GetDlgItem(IDC_MY_PICTURE);
+
+	p_static->GetClientRect(&m_rect_pic_client);
+
+	m_rect_pic_client.NormalizeRect();
+
+	p_static->ClientToScreen(&m_rect_pic_client);
+
+	p_static->ScreenToClient(&m_rect_pic_client);
+
+	InvalidateRect(&m_rect_pic_client);
 
 
-	InvalidateRect(r, TRUE);
+}
+
+CSize CExamMemDCDlg::GetTotalSize()
+{
+	HBITMAP img_bmp = GetBitmap();
+
+	BITMAP bi;
+
+	GetObject(img_bmp, sizeof(BITMAP), &bi);
+
+	CSize a_size(bi.bmWidth, bi.bmHeight);
+
+	return a_size;
+}
+
+BOOL CExamMemDCDlg::WriteStringIni(CString sectionName, CString keyName, CString strDefault, CString strFilePath)
+{
+	WritePrivateProfileString(sectionName, keyName, strDefault, m_ini_filepath);
+
+	return TRUE;
 }
