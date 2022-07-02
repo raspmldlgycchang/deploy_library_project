@@ -1,0 +1,5 @@
+﻿  ExamMemDC.cpp
+  ExamMemDCDlg.cpp
+c:\elp\docs\memdc\exammemdc\exammemdc\exammemdcdlg.cpp(148): warning C4101: 'bmp_info' :참조되지 않은 지역 변수입니다.
+  코드를 생성하고 있습니다...
+  ExamMemDC.vcxproj -> C:\ELP\docs\MemDC\ExamMemDC\Debug\ExamMemDC.exe
