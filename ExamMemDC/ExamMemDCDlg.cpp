@@ -145,7 +145,7 @@ HBITMAP CExamMemDCDlg::GetBitmap()
 void CExamMemDCDlg::CopyBitmap(HBITMAP ah_bitmap)
 {
 	int w = m_bmp_info.bmWidth, h = m_bmp_info.bmHeight, clr = m_bmp_info.bmBitsPixel;
-	BITMAP bmp_info,dest_bmp_info;
+	BITMAP dest_bmp_info;
 	
 	if (!dest_image.IsNull()) {
 		dest_image.Destroy();
