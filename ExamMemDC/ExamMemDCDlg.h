@@ -51,6 +51,7 @@ private:
 	CScrollBar m_v_scrollbar;
 	int offsetx;
 	int offsety;
+	CString frac_filePath;
 public:
 	afx_msg void OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
 	afx_msg void OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);

@@ -242,6 +242,8 @@ void CExamMemDCDlg::OnBnClickedOpenBtn()
 		{
 			m_file_path = ins_dlg.GetPathName();
 
+			frac_filePath = m_file_path;
+
 			SetBitmap(m_file_path);
 
 			CSize a_size = GetTotalSize();
@@ -385,14 +387,63 @@ void CExamMemDCDlg::GetFracImgCBrushVers(HDC ah_dc, int a_src_x, int a_src_y, in
 	else {
 		m_mem_view.Create(size_img.cx / 3, size_img.cy / 3,32,0);
 	}
-	HDC hdc_mmem_view = m_mem_view.GetDC();
-
-	p_old_bmp = (HBITMAP)m_mem_dc.SelectObject(p_old_bmp);
+	/*HDC hdc_mmem_view = m_mem_view.GetDC();
 
 	DWORD cx = size_img.cx / 3;
 	DWORD cy = size_img.cy / 3;
 	BitBlt(hdc_mmem_view, 0, 0, cx, cy, ah_dc,0,0,SRCCOPY);
-	::DeleteDC(hdc_mmem_view);
+	::DeleteDC(hdc_mmem_view);*/
+
+	/* 한줄씩 복사하는 코드사용 */
+	HBITMAP brush_frac_bmp = (HBITMAP)LoadImage(AfxGetInstanceHandle(), frac_filePath, IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+	CDC brush_frac_memDC;
+	BITMAP brush_frac_bmp_info;
+	
+	/* 제대로 이미지가 로드된 경우에만 SetBitmap For Fractal Image*/
+	if (brush_frac_bmp != NULL)
+	{
+		GetObject(brush_frac_bmp, sizeof(BITMAP), &brush_frac_bmp_info);
+		::SelectObject(brush_frac_memDC.m_hDC, brush_frac_bmp);
+	}
+
+	/* CImage를 HBITMAP정보를 받아와 Create한다 */
+	CImage brush_frac_dest_image;
+
+	tagBITMAP bi = brush_frac_bmp_info;
+
+	/* 1. CImage를 Create */
+	brush_frac_dest_image.Create(bi.bmWidth, bi.bmHeight, bi.bmBitsPixel);
+
+	/* 2. dest_bmp_info에 생성한 CImage의 비트패턴 시작주소를 받아온다 */
+	BITMAP brush_frac_dest_bmp_info;
+
+	GetObject((HBITMAP)brush_frac_dest_image, sizeof(BITMAP), &brush_frac_dest_bmp_info);
+
+	/* 3. HBITMAP에 저장된 비트 패턴 구성 정보를 CImgae 비트패턴 시작주소에 복사 */
+	int copy_size = bi.bmWidth * bi.bmHeight * bi.bmBitsPixel / 8;
+
+	GetBitmapBits(brush_frac_bmp, copy_size, brush_frac_dest_bmp_info.bmBits);
+
+	/* 4. char 포인터형 변수에 HBITMAP정보를 저장해둔다 */
+	int image_size = copy_size;
+
+	char *p_copied = new char[image_size];
+
+	GetBitmapBits(brush_frac_bmp, image_size, p_copied);
+
+	int line_size = bi.bmWidth*bi.bmBitsPixel / 8;
+
+	/* 5. 새로운 char 포인터형 변수에 brush_frac_dest_image의 비트패턴 시작 주소를 가리키게 */
+	char *p_bmp_pattern = (char*)brush_frac_dest_bmp_info.bmBits;
+
+	/* 6. 거꾸로 LoadImage된 비트 패턴을 한 줄씩 메모리에서 CImage객체로 복사한다 */
+	for (int y = bi.bmHeight - 1; y >= 0; y--)
+	{
+		memcpy(p_copied, p_bmp_pattern + y * line_size, line_size);
+		p_copied += line_size;
+	}
+	delete[] p_copied;
+
 }
 
 POINT CExamMemDCDlg::GetPicCtrlPt()
