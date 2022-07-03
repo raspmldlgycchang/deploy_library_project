@@ -14,8 +14,8 @@
 #define IDC_PIC1                        1007
 #define IDC_PIC2                        1008
 #define IDC_PIC3                        1009
-#define IDC_PIC4                        1011
-#define IDC_PIC5                        1012
+#define IDC_PIC4                        1010
+#define IDC_PIC5                        1011
 #define IDC_BUTTON                      1014
 
 // Next default values for new objects

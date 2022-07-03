@@ -58,7 +58,27 @@ BOOL CExamMemDCDlg::OnInitDialog()
 	SetBitmap(default_path);
 
 	HBITMAP pass_hbmp = GetBitmap();
+	CSize size_src(this->m_rect_pic_client.Width(), this->m_rect_pic_client.Height());
+	POINT src_pt = GetPicCtrlPt();
+	for (int i = 0; i < 5; i++)
+	{
+		HWND ah_wnd_pic = ::GetDlgItem(m_hWnd, IDC_PIC1 + i);
+		HDC ah_dc_pic = ::GetDC(ah_wnd_pic);
+		GetFracImgCBrushVers(ah_dc_pic, src_pt.x, src_pt.y, size_src.cx, size_src.cy);
+
+	}
+	
+	pass_hbmp = GetBitmap();
 	CopyBitmap(pass_hbmp);
+
+	CRect rect_mem_view;
+	CStatic *p_static = (CStatic*)GetDlgItem(IDC_MY_PICTURE);
+	p_static->GetClientRect(&rect_mem_view);
+	rect_mem_view.NormalizeRect();
+	p_static->ClientToScreen(&rect_mem_view);
+	p_static->ScreenToClient(&rect_mem_view);
+	m_mem_view.Create(rect_mem_view.Width(), rect_mem_view.Height(),32,0);
+
 	return TRUE;  // 포커스를 컨트롤에 설정하지 않으면 TRUE를 반환합니다.
 }
 
@@ -91,11 +111,24 @@ void CExamMemDCDlg::OnPaint()
 		HWND hWnd_pic = ::GetDlgItem(m_hWnd, IDC_MY_PICTURE);
 		HDC hdc_pic = ::GetDC(hWnd_pic);
 		::GetWindowRect(hWnd_pic, rect);
-		
-
-		
 
 		DrawImage(hdc_pic);
+		CSize size_rect(0, 0);
+		for (int i = 0; i < 5; i++) {
+			hWnd_pic = ::GetDlgItem(m_hWnd, IDC_PIC1 + i);
+			hdc_pic = ::GetDC(hWnd_pic);
+			CRect frac_rect_pic_client;
+			CStatic*p_static = (CStatic*)GetDlgItem(IDC_PIC1 + i);
+			p_static->GetClientRect(&frac_rect_pic_client);
+			frac_rect_pic_client.NormalizeRect();
+			p_static->ClientToScreen(&frac_rect_pic_client);
+			p_static->ScreenToClient(&frac_rect_pic_client);
+			CSize size_frac_rect;
+			size_frac_rect.cx = frac_rect_pic_client.Width();
+			size_frac_rect.cy = frac_rect_pic_client.Height();
+
+			DrawClipImagesCBrushVers(hdc_pic, size_frac_rect.cx, size_frac_rect.cy);
+		}
 		// CDialogEx::OnPaint();
 	}
 }
@@ -116,6 +149,11 @@ void CExamMemDCDlg::OnDestroy()
 	if (m_mem_dc.m_hDC != NULL) {
 		m_mem_bmp.DeleteObject();
 		m_mem_dc.DeleteDC();
+	}
+
+	if (!m_mem_view.IsNull())
+	{
+		m_mem_view.ReleaseDC();
 	}
 }
 
@@ -324,4 +362,48 @@ BOOL CExamMemDCDlg::WriteStringIni(CString sectionName, CString keyName, CString
 	WritePrivateProfileString(sectionName, keyName, strDefault, m_ini_filepath);
 
 	return TRUE;
+}
+
+void CExamMemDCDlg::GetFracImgCBrushVers(HDC ah_dc, int a_src_x, int a_src_y, int a_src_width, int a_src_height)
+{
+	CSize size_img(0,0);
+	if (!m_mem_view.IsNull())
+	{
+		m_mem_view.ReleaseDC();
+		size_img = GetTotalSize();
+		m_mem_view.Create(size_img.cx / 3, size_img.cy / 3, 32, 0);
+	}
+	else {
+		m_mem_view.Create(size_img.cx / 3, size_img.cy / 3,32,0);
+	}
+	HDC hdc_mmem_view = m_mem_view.GetDC();
+
+	p_old_bmp = (HBITMAP)m_mem_dc.SelectObject(p_old_bmp);
+
+	DWORD cx = size_img.cx / 3;
+	DWORD cy = size_img.cy / 3;
+	BitBlt(hdc_mmem_view, 0, 0, cx, cy, ah_dc,0,0,SRCCOPY);
+	::DeleteDC(hdc_mmem_view);
+}
+
+POINT CExamMemDCDlg::GetPicCtrlPt()
+{
+	POINT ret_pt;
+	ret_pt.x = this->m_rect_pic_client.left;
+	ret_pt.y = this->m_rect_pic_client.top;
+
+	return ret_pt;
+}
+
+DWORD CExamMemDCDlg::ReadIntIni(CString strSection, CString strKey, CString strDefault, CString strFilePath)
+{
+	TCHAR szTemp[1024];
+	memset(szTemp, 0x00, sizeof(szTemp));
+	GetPrivateProfileString(strSection, strKey, strDefault, szTemp, sizeof(szTemp), strFilePath);
+	DWORD ret_val = _tstof(szTemp);
+	return ret_val;
+}
+void CExamMemDCDlg::DrawClipImagesCBrushVers(HDC ah_dc, int cx, int cy)
+{
+	m_mem_view.Draw(ah_dc, 0, 0, cx, cy);
 }

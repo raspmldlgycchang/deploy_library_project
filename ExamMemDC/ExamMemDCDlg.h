@@ -21,6 +21,10 @@ public:
 	void RenewalDisplay();
 	CSize GetTotalSize();
 	BOOL WriteStringIni(CString sectionName, CString keyName, CString strDefault, CString strFilePath);
+	void CExamMemDCDlg::GetFracImgCBrushVers(HDC ah_dc, int a_src_x, int a_src_y, int a_src_width, int a_src_height);
+	POINT GetPicCtrlPt();
+	DWORD ReadIntIni(CString strSection, CString strKey, CString strDefault, CString strFilePath);
+	void DrawClipImagesCBrushVers(HDC ah_dc, int cx, int cy);
 
 protected:
 	virtual void DoDataExchange(CDataExchange* pDX);
@@ -42,4 +46,5 @@ private:
 	CString m_ini_filepath;
 	CRect m_rect_pic_client;
 	CString m_file_path;
+	CImage m_mem_view;
 };
