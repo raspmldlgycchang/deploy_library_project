@@ -222,7 +222,14 @@ void CExamMemDCDlg::CopyBitmap(HBITMAP ah_bitmap)
 void CExamMemDCDlg::DrawImage(HDC ah_dc_pic)
 {
 	int w = m_bmp_info.bmWidth, h = m_bmp_info.bmHeight;
-	::BitBlt(ah_dc_pic, 0, 0, w, h, m_mem_dc, 0, 0, SRCCOPY);
+	int dst_w = this->m_rect_pic_client.Width();
+	int dst_h = this->m_rect_pic_client.Height();
+	int scroll_pos_x = m_h_scrollbar.GetScrollPos();
+	int scroll_pos_y = m_v_scrollbar.GetScrollPos();
+	// ::BitBlt(ah_dc_pic, 0, 0, w, h, m_mem_dc, 0, 0, SRCCOPY);
+	// StretchBlt(ah_dc_pic, 0, 0, w, h, m_mem_dc, scroll_pos_x, scroll_pos_y,w-this->m_rect_pic_client.Width(), h - m_rect_pic_client.Height(), SRCCOPY);
+	::BitBlt(ah_dc_pic, 0, 0, w-this->m_rect_pic_client.Width(), h-this->m_rect_pic_client.Height(), m_mem_dc, scroll_pos_x, scroll_pos_y, SRCCOPY);
+	//StretchBlt(ah_dc_pic, 0, 0, dst_w, dst_h, m_mem_dc, scroll_pos_x, scroll_pos_y,  - this->m_rect_pic_client.Width(), h - this->m_rect_pic_client.Height(), SRCCOPY);
 }
 
 void CExamMemDCDlg::OnBnClickedOpenBtn()
@@ -349,10 +356,7 @@ void CExamMemDCDlg::RenewalDisplay()
 
 	p_static->ScreenToClient(&m_rect_pic_client);
 
-	// InvalidateRect(&m_rect_pic_client);
-
-	Invalidate(TRUE);
-
+	InvalidateRect(&m_rect_pic_client);
 }
 
 CSize CExamMemDCDlg::GetTotalSize()
@@ -478,24 +482,42 @@ void CExamMemDCDlg::DrawScrollBar()
 	pt.y = m_rect_pic_client.top;
 	this->offsetx = pt.x;
 	this->offsety = pt.y;
-	if (bi.bmWidth > size_rect_pic_client.cx)
+	
+	if (bi.bmHeight > size_rect_pic_client.cy&&bi.bmWidth > size_rect_pic_client.cx)
 	{
-		m_h_scrollbar.ShowWindow(true);
-		m_v_scrollbar.ShowWindow(false);
-		m_h_scrollbar.SetScrollRange(0, bi.bmWidth - size_rect_pic_client.cx,0);
-		this->offsety = pt.y + ((size_rect_pic_client.cy - bi.bmHeight) / 2);
-		m_h_scrollbar.MoveWindow(offsetx, offsety + bi.bmHeight, size_rect_pic_client.cx, 18);
-	}
-	else if (bi.bmHeight > size_rect_pic_client.cy&&bi.bmWidth > size_rect_pic_client.cx)
-	{
-		m_v_scrollbar.ShowWindow(TRUE);
-		m_h_scrollbar.ShowWindow(FALSE);
+		
 		m_v_scrollbar.SetScrollRange(0, bi.bmHeight - size_rect_pic_client.cy,0);
 		m_h_scrollbar.SetScrollRange(0, bi.bmWidth - size_rect_pic_client.cx, 0);
-		offsety = pt.y + ((size_rect_pic_client.cy - bi.bmHeight) / 2);
-		offsetx = pt.x + ((size_rect_pic_client.cx - bi.bmWidth) / 2);
-		m_h_scrollbar.MoveWindow(offsetx + bi.bmWidth, offsety + bi.bmHeight, size_rect_pic_client.cx, size_rect_pic_client.cy);
+		m_v_scrollbar.ShowWindow(true);
+		m_h_scrollbar.ShowWindow(true);
 	}
+	else if (bi.bmWidth > size_rect_pic_client.cx &&bi.bmHeight <= size_rect_pic_client.cy)
+	{
+		m_h_scrollbar.SetScrollRange(0, bi.bmWidth - size_rect_pic_client.cx, 0);
+		this->offsety = pt.y + ((size_rect_pic_client.cy - bi.bmHeight) / 2);
+		m_h_scrollbar.MoveWindow(offsetx, offsety + bi.bmHeight, size_rect_pic_client.cx, 18);
+		m_h_scrollbar.ShowWindow(true);
+		m_v_scrollbar.ShowWindow(false);
+	}
+	else if (bi.bmHeight > size_rect_pic_client.cy && bi.bmWidth <= size_rect_pic_client.cx)
+	{
+		m_v_scrollbar.SetScrollRange(0, bi.bmHeight - size_rect_pic_client.cy, 0);
+		this->offsetx = pt.x + ((size_rect_pic_client.cx - bi.bmWidth) / 2);
+		m_v_scrollbar.MoveWindow(offsetx + bi.bmWidth, offsety, 18, size_rect_pic_client.cy);
+		m_v_scrollbar.ShowWindow(false);
+		m_h_scrollbar.ShowWindow(true);
+	}
+	else if (bi.bmWidth <= size_rect_pic_client.cx && bi.bmHeight <= size_rect_pic_client.cy)
+	{
+		offsetx = pt.x + ((size_rect_pic_client.cx-bi.bmWidth) / 2);
+		offsety = pt.y + ((size_rect_pic_client.cy-bi.bmHeight) / 2);
+		m_h_scrollbar.ShowWindow(false);
+		m_v_scrollbar.ShowWindow(false);
+	}
+	else
+	{
+	}
+	InvalidateRect(&m_rect_pic_client);
 }
 
 void CExamMemDCDlg::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)

@@ -9,3 +9,4 @@ ExamMemDC/x64/
 *.iobj
 .localhistory/
 ExamMemDC/Debug/error.log
+Bin/DataWrite.ini
