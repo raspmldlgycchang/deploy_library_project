@@ -25,6 +25,8 @@ CExamMemDCDlg::CExamMemDCDlg(CWnd* pParent /*=nullptr*/)
 
 void CExamMemDCDlg::DoDataExchange(CDataExchange* pDX)
 {
+	DDX_Control(pDX, IDC_H_SCROLLBAR, this->m_h_scrollbar);
+	DDX_Control(pDX, IDC_V_SCROLLBAR, this->m_v_scrollbar);
 	CDialogEx::DoDataExchange(pDX);
 }
 
@@ -33,6 +35,8 @@ BEGIN_MESSAGE_MAP(CExamMemDCDlg, CDialogEx)
 	ON_WM_QUERYDRAGICON()
 	ON_WM_DESTROY()
 	ON_BN_CLICKED(IDC_OPEN_BTN, &CExamMemDCDlg::OnBnClickedOpenBtn)
+	ON_WM_HSCROLL()
+	ON_WM_VSCROLL()
 END_MESSAGE_MAP()
 
 
@@ -79,6 +83,8 @@ BOOL CExamMemDCDlg::OnInitDialog()
 	p_static->ScreenToClient(&rect_mem_view);
 	m_mem_view.Create(rect_mem_view.Width(), rect_mem_view.Height(),32,0);
 
+	m_h_scrollbar.ShowWindow(false);
+	m_v_scrollbar.ShowWindow(false);
 	return TRUE;  // 포커스를 컨트롤에 설정하지 않으면 TRUE를 반환합니다.
 }
 
@@ -128,6 +134,8 @@ void CExamMemDCDlg::OnPaint()
 			size_frac_rect.cy = frac_rect_pic_client.Height();
 
 			DrawClipImagesCBrushVers(hdc_pic, size_frac_rect.cx, size_frac_rect.cy);
+
+			DrawScrollBar();
 		}
 		// CDialogEx::OnPaint();
 	}
@@ -339,8 +347,9 @@ void CExamMemDCDlg::RenewalDisplay()
 
 	p_static->ScreenToClient(&m_rect_pic_client);
 
-	InvalidateRect(&m_rect_pic_client);
+	// InvalidateRect(&m_rect_pic_client);
 
+	Invalidate(TRUE);
 
 }
 
@@ -406,4 +415,116 @@ DWORD CExamMemDCDlg::ReadIntIni(CString strSection, CString strKey, CString strD
 void CExamMemDCDlg::DrawClipImagesCBrushVers(HDC ah_dc, int cx, int cy)
 {
 	m_mem_view.Draw(ah_dc, 0, 0, cx, cy);
+}
+
+void CExamMemDCDlg::DrawScrollBar()
+{
+	BITMAP bi;
+	GetObject(mh_mem_bmp, sizeof(BITMAP), &bi);
+	CSize size_rect_pic_client(this->m_rect_pic_client.Width(), this->m_rect_pic_client.Height());
+	POINT pt;
+	pt.x = m_rect_pic_client.left;
+	pt.y = m_rect_pic_client.top;
+	this->offsetx = pt.x;
+	this->offsety = pt.y;
+	if (bi.bmWidth > size_rect_pic_client.cx)
+	{
+		m_h_scrollbar.ShowWindow(true);
+		m_v_scrollbar.ShowWindow(false);
+		m_h_scrollbar.SetScrollRange(0, bi.bmWidth - size_rect_pic_client.cx,0);
+		this->offsety = pt.y + ((size_rect_pic_client.cy - bi.bmHeight) / 2);
+		m_h_scrollbar.MoveWindow(offsetx, offsety + bi.bmHeight, size_rect_pic_client.cx, 18);
+	}
+	else if (bi.bmHeight > size_rect_pic_client.cy&&bi.bmWidth > size_rect_pic_client.cx)
+	{
+		m_v_scrollbar.ShowWindow(TRUE);
+		m_h_scrollbar.ShowWindow(FALSE);
+		m_v_scrollbar.SetScrollRange(0, bi.bmHeight - size_rect_pic_client.cy,0);
+		m_h_scrollbar.SetScrollRange(0, bi.bmWidth - size_rect_pic_client.cx, 0);
+		offsety = pt.y + ((size_rect_pic_client.cy - bi.bmHeight) / 2);
+		offsetx = pt.x + ((size_rect_pic_client.cx - bi.bmWidth) / 2);
+		m_h_scrollbar.MoveWindow(offsetx + bi.bmWidth, offsety + bi.bmHeight, size_rect_pic_client.cx, size_rect_pic_client.cy);
+	}
+}
+
+void CExamMemDCDlg::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
+{
+	if (pScrollBar->GetSafeHwnd() == m_h_scrollbar.GetSafeHwnd())
+	{
+		if (nSBCode == SB_THUMBPOSITION || nSBCode == SB_THUMBPOSITION)
+		{
+			m_h_scrollbar.SetScrollPos(nPos);
+		}
+		else
+		{
+			int scroll_pos = m_h_scrollbar.GetScrollPos();
+			int min = 0;
+			int max = 0;
+
+			m_h_scrollbar.GetScrollRange(&min, &max);
+
+			switch (nSBCode)
+			{
+			case SB_LINEDOWN:
+				if (scroll_pos < max)	m_h_scrollbar.SetScrollPos(SB_VERT, ++scroll_pos);
+				break;
+			case SB_LINEUP:
+				if (scroll_pos > min)	m_h_scrollbar.SetScrollPos(SB_VERT, --scroll_pos);
+				break;
+			case SB_PAGEDOWN:
+				if (scroll_pos + 24 < max)	m_h_scrollbar.SetScrollPos(SB_VERT, scroll_pos + 24);
+				break;
+			case SB_PAGEUP:
+				if (scroll_pos - 24 > min)	m_h_scrollbar.SetScrollPos(SB_VERT, scroll_pos - 24);
+				break;
+			default:
+				break;
+			}
+		}
+		Invalidate(FALSE);
+	}
+
+
+	CDialogEx::OnHScroll(nSBCode, nPos, pScrollBar);
+}
+
+
+void CExamMemDCDlg::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
+{
+	if (pScrollBar->GetSafeHwnd() == m_v_scrollbar.GetSafeHwnd())
+	{
+		if (nSBCode == SB_THUMBPOSITION || nSBCode == SB_THUMBPOSITION)
+		{
+			m_v_scrollbar.SetScrollPos(nPos);
+		}
+		else
+		{
+			int scroll_pos = m_v_scrollbar.GetScrollPos();
+			int min = 0;
+			int max = 0;
+
+			m_v_scrollbar.GetScrollRange(&min, &max);
+
+			switch (nSBCode)
+			{
+			case SB_LINEDOWN:
+				if (scroll_pos < max)	m_v_scrollbar.SetScrollPos(SB_HORZ, ++scroll_pos);
+				break;
+			case SB_LINEUP:
+				if (scroll_pos > min)	m_v_scrollbar.SetScrollPos(SB_HORZ, --scroll_pos);
+				break;
+			case SB_PAGEDOWN:
+				if (scroll_pos + 24 < max)	m_v_scrollbar.SetScrollPos(SB_HORZ, scroll_pos + 24);
+				break;
+			case SB_PAGEUP:
+				if (scroll_pos - 24 > min)	m_v_scrollbar.SetScrollPos(SB_HORZ, scroll_pos - 24);
+				break;
+			default:
+				break;
+			}
+		}
+		Invalidate(FALSE);
+	}
+
+	CDialogEx::OnVScroll(nSBCode, nPos, pScrollBar);
 }

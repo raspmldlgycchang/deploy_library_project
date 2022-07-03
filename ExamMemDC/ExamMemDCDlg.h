@@ -25,7 +25,7 @@ public:
 	POINT GetPicCtrlPt();
 	DWORD ReadIntIni(CString strSection, CString strKey, CString strDefault, CString strFilePath);
 	void DrawClipImagesCBrushVers(HDC ah_dc, int cx, int cy);
-
+	void DrawScrollBar();
 protected:
 	virtual void DoDataExchange(CDataExchange* pDX);
 
@@ -47,4 +47,11 @@ private:
 	CRect m_rect_pic_client;
 	CString m_file_path;
 	CImage m_mem_view;
+	CScrollBar m_h_scrollbar;
+	CScrollBar m_v_scrollbar;
+	int offsetx;
+	int offsety;
+public:
+	afx_msg void OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
+	afx_msg void OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
 };
