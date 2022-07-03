@@ -26,6 +26,8 @@ public:
 	DWORD ReadIntIni(CString strSection, CString strKey, CString strDefault, CString strFilePath);
 	void DrawClipImagesCBrushVers(HDC ah_dc, int cx, int cy);
 	void DrawScrollBar();
+	/*BITMAPINFO* CreateBitmapInfo();*/
+	BITMAPINFO* CreateBitmapInfoNewVers();
 protected:
 	virtual void DoDataExchange(CDataExchange* pDX);
 
@@ -52,6 +54,7 @@ private:
 	int offsetx;
 	int offsety;
 	CString frac_filePath;
+	PBITMAPINFO p_bmp_info;
 public:
 	afx_msg void OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
 	afx_msg void OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);

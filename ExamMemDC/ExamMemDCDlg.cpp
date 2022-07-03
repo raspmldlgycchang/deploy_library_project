@@ -81,7 +81,7 @@ BOOL CExamMemDCDlg::OnInitDialog()
 	rect_mem_view.NormalizeRect();
 	p_static->ClientToScreen(&rect_mem_view);
 	p_static->ScreenToClient(&rect_mem_view);
-	m_mem_view.Create(rect_mem_view.Width(), rect_mem_view.Height(),32,0);
+	m_mem_view.Create(rect_mem_view.Width(), rect_mem_view.Height(),24,0);
 
 	m_h_scrollbar.ShowWindow(false);
 	m_v_scrollbar.ShowWindow(false);
@@ -219,17 +219,162 @@ void CExamMemDCDlg::CopyBitmap(HBITMAP ah_bitmap)
 	delete[] p_copied;
 
 }
+//
+//BITMAPINFO* CExamMemDCDlg::CreateBitmapInfo()
+//{
+//	CFile file;
+//	BITMAPINFOHEADER bmfh;
+//	DWORD dwFileSize, dwDibSize;
+//
+//	file.Open(m_file_path, CFile::modeRead | CFile::shareDenyWrite, NULL);
+//	dwFileSize = (DWORD)file.GetLength();
+//	dwDibSize = dwFileSize - sizeof(BITMAPINFOHEADER);
+//	BYTE *pDib = new BYTE[dwDibSize];
+//	
+//	file.Read(&bmfh, sizeof(BITMAPINFOHEADER));
+//	file.Read(pDib, dwDibSize);
+//	file.Close();
+//
+//	BITMAPINFOHEADER *pBmh = (BITMAPINFOHEADER*)pDib;
+//	int nWidth = pBmh->biWidth;
+//	int nHeight = pBmh->biHeight;
+//	int nBit = pBmh->biBitCount;
+//	
+//	return (BITMAPINFO*)pDib;
+//}
+
 void CExamMemDCDlg::DrawImage(HDC ah_dc_pic)
 {
+	/*BITMAPINFO* pDib = CreateBitmapInfo();
+	BITMAPINFOHEADER* pBmh = (BITMAPINFOHEADER*)pDib;
+	int nBit = pBmh->biBitCount;
+	BYTE* lpBits = NULL;
+	if (nBit > 8)
+	{
+		lpBits = (BYTE*)pDib + sizeof(BITMAPINFOHEADER);
+	}
+	else
+	{
+		lpBits = (BYTE*)pDib + sizeof(BITMAPINFOHEADER) + sizeof(RGBQUAD)*(1 << nBit);
+	}*/
+
 	int w = m_bmp_info.bmWidth, h = m_bmp_info.bmHeight;
 	int dst_w = this->m_rect_pic_client.Width();
 	int dst_h = this->m_rect_pic_client.Height();
 	int scroll_pos_x = m_h_scrollbar.GetScrollPos();
 	int scroll_pos_y = m_v_scrollbar.GetScrollPos();
+
+	WORD cClrBits=0;
+	cClrBits = (WORD)(m_bmp_info.bmPlanes*m_bmp_info.bmBitsPixel);
+	
 	// ::BitBlt(ah_dc_pic, 0, 0, w, h, m_mem_dc, 0, 0, SRCCOPY);
 	// StretchBlt(ah_dc_pic, 0, 0, w, h, m_mem_dc, scroll_pos_x, scroll_pos_y,w-this->m_rect_pic_client.Width(), h - m_rect_pic_client.Height(), SRCCOPY);
-	::BitBlt(ah_dc_pic, 0, 0, w-this->m_rect_pic_client.Width(), h-this->m_rect_pic_client.Height(), m_mem_dc, scroll_pos_x, scroll_pos_y, SRCCOPY);
+	// 이게 됨 ::BitBlt(ah_dc_pic, 0, 0, w-this->m_rect_pic_client.Width(), h-this->m_rect_pic_client.Height(), m_mem_dc, scroll_pos_x, scroll_pos_y, SRCCOPY);
 	//StretchBlt(ah_dc_pic, 0, 0, dst_w, dst_h, m_mem_dc, scroll_pos_x, scroll_pos_y,  - this->m_rect_pic_client.Width(), h - this->m_rect_pic_client.Height(), SRCCOPY);
+	HBITMAP brush_frac_bmp = (HBITMAP)LoadImage(AfxGetInstanceHandle(), frac_filePath, IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+	CDC brush_frac_memDC;
+	BITMAP brush_frac_bmp_info;
+	if (brush_frac_bmp != NULL)
+	{
+		GetObject(brush_frac_bmp, sizeof(BITMAP), &brush_frac_bmp_info);
+		::SelectObject(brush_frac_memDC.m_hDC, brush_frac_bmp);
+	}
+
+	/* CImage를 HBITMAP정보를 받아와 Create한다 */
+	CImage brush_frac_dest_image;
+
+	tagBITMAP bi = brush_frac_bmp_info;
+
+	/* 1. CImage를 Create */
+	brush_frac_dest_image.Create(bi.bmWidth, bi.bmHeight, bi.bmBitsPixel);
+
+	/* 2. dest_bmp_info에 생성한 CImage의 비트패턴 시작주소를 받아온다 */
+	BITMAP brush_frac_dest_bmp_info;
+
+	GetObject((HBITMAP)brush_frac_dest_image, sizeof(BITMAP), &brush_frac_dest_bmp_info);
+
+	/* 3. HBITMAP에 저장된 비트 패턴 구성 정보를 CImgae 비트패턴 시작주소에 복사 */
+	int copy_size = bi.bmWidth * bi.bmHeight * bi.bmBitsPixel / 8;
+
+	GetBitmapBits(brush_frac_bmp, copy_size, brush_frac_dest_bmp_info.bmBits);
+
+	PBITMAPINFO pbmi = CreateBitmapInfoNewVers();
+
+	SetStretchBltMode(ah_dc_pic, COLORONCOLOR);
+
+	StretchDIBits(ah_dc_pic, 0, 0, dst_w, dst_h, scroll_pos_x, scroll_pos_y, w - this->m_rect_pic_client.Width(), h - this->m_rect_pic_client.Height(), brush_frac_dest_bmp_info.bmBits, pbmi, DIB_RGB_COLORS, SRCCOPY);
+}
+
+PBITMAPINFO CExamMemDCDlg::CreateBitmapInfoNewVers()
+{
+	WORD cClrBits;
+
+	WORD bm_planes = (WORD)(1);
+
+	cClrBits = (WORD)(m_bmp_info.bmPlanes*m_bmp_info.bmBitsPixel);
+
+	if (cClrBits == 1)
+		cClrBits = 1;
+	else if (cClrBits <= 4)
+		cClrBits = 4;
+	else if (cClrBits <= 8)
+		cClrBits = 8;
+	else if (cClrBits <= 16)
+		cClrBits = 16;
+	else if (cClrBits <= 24)
+		cClrBits = 24;
+	else cClrBits = 32;
+
+	if (cClrBits != 24)
+	{
+		p_bmp_info = (PBITMAPINFO)LocalAlloc(LPTR, sizeof(BITMAPINFOHEADER) + (1 << cClrBits) * sizeof(RGBQUAD));
+	}
+	else
+	{
+		p_bmp_info = (PBITMAPINFO)LocalAlloc(LPTR, sizeof(BITMAPINFOHEADER));
+	}
+
+	p_bmp_info->bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+
+	p_bmp_info->bmiHeader.biPlanes = 1;
+
+	p_bmp_info->bmiHeader.biBitCount = m_bmp_info.bmBitsPixel;
+
+	p_bmp_info->bmiHeader.biCompression = BI_RGB;
+
+	p_bmp_info->bmiHeader.biSizeImage = 0;
+
+	p_bmp_info->bmiHeader.biSizeImage = ((p_bmp_info->bmiHeader.biWidth * cClrBits
+		+ 31) & ~31) / 8;
+
+	p_bmp_info->bmiHeader.biXPelsPerMeter = 0;
+
+	p_bmp_info->bmiHeader.biYPelsPerMeter = 0;
+
+	if (cClrBits < 24)
+		p_bmp_info->bmiHeader.biClrUsed = (1 << cClrBits);
+
+	p_bmp_info->bmiHeader.biClrImportant = 0;
+
+	if (m_bmp_info.bmBitsPixel == 8)
+	{
+		for (int i = 0; i < 256; i++)
+		{
+			p_bmp_info->bmiColors[i].rgbBlue = (BYTE)i;
+
+			p_bmp_info->bmiColors[i].rgbGreen = (BYTE)i;
+
+			p_bmp_info->bmiColors[i].rgbRed = (BYTE)i;
+
+			p_bmp_info->bmiColors[i].rgbReserved = 0;
+		}
+	}
+
+	p_bmp_info->bmiHeader.biWidth = m_bmp_info.bmWidth;
+
+	p_bmp_info->bmiHeader.biHeight = m_bmp_info.bmHeight;
+
+	return p_bmp_info;
 }
 
 void CExamMemDCDlg::OnBnClickedOpenBtn()
